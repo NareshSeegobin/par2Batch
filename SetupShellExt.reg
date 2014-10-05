@@ -1,0 +1,7 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Folder\shell\MakePar2]
+@="Make 100% Par2 File (Varying Block Sizes)"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Folder\shell\MakePar2\command]
+@="C:\\Utilities\\System\\par2cmdline-0.4-x86-win32\\makePar2Image.bat \"%L\""
