@@ -124,8 +124,6 @@ echo Par Start: %date% - %time% :Using %parEXE% >> ".\%~nx1 - PAR\par-time.log" 
 
 START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v ".\%~nx1 - PAR\%~nx1.par2" "%~f1\*.*"  >> ".\%~nx1 - PAR\par-time.log" 2>&1
 
-@REM START "Parring data" /I /WAIT /LOW C:\Utilities\System\par2cmdline-0.4-x86-win32\phpar2_13.exe c -s20480000 -r100 -u -n128 -m1500 -v "D:\Data\Downloads\Torrents\ROMs-Roms.MAME.v0.139.Full.Arcade.Set - PAR\ROMs-Roms.MAME.v0.139.Full.Arcade.par2" "D:\Data\Downloads\Torrents\ROMs-Roms.MAME.v0.139.Full.Arcade.Set.Roms\*.*"
-
 echo "Completed parring..." >> ".\%~nx1 - PAR\par-time.log" 2>&1
 
 echo Par Stop : %date% - %time% :Using %parEXE% >> ".\%~nx1 - PAR\par-time.log" 2>&1
@@ -136,9 +134,8 @@ copy ".\%~nx1 - PAR\%~nx1.par2" "%~f1" >> ".\%~nx1 - PAR\par-time.log" 2>&1
 @REM START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v ".\%~n1 - PAR\%~n1.par2" "%~f1\*.*"
 
 rem pause
- 
-rem START "Parring data" /I /WAIT /LOW /B C:\Utilities\System\par2cmdline-0.4-x86-win32\par2-cuda.exe  c -s20480000 -r100 -u -n16 -m1500 -v -t0 "%~n1.par2" "%~f1\*.*"
-rem START "Parring data" /I /WAIT /LOW /B C:\Utilities\System\par2cmdline-0.4-x86-win32\par2-intel.exe  c -s20480000 -r100 -u -n16 -m1500 -v -t0 "%~n1.par2" "%~f1\*.*" 
+
+
 
 
 
