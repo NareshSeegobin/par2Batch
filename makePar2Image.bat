@@ -92,7 +92,7 @@ set numRecoveryfiles=64
 
 if /I %size% LSS %twoGB% (
 	set blockSize=2048000
-	set numRecoveryfiles=16
+	set numRecoveryfiles=2
    ) else (
 	if /I %size% LSS %fourGB% (
 		set blockSize=2048000
