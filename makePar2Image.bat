@@ -113,30 +113,43 @@ echo "blockSize is: %blockSize%"
 
 
 
+@REM Get free memory
+@REM https://stackoverflow.com/questions/9095948/how-to-retrieve-available-ram-from-windows-command-line
+@REM https://stackoverflow.com/questions/108439/how-do-i-get-the-result-of-a-command-in-a-variable-in-windows
+@REM https://stackoverflow.com/questions/2323292/assign-output-of-a-program-to-a-variable
+@REM https://stackoverflow.com/questions/20219527/batch-file-set-wmi-output-as-a-variable
+
+set /a FreeMemoryValueMB=1500
+FOR /F "tokens=*" %%I IN ('wmic OS get FreePhysicalMemory /Value ^| find "="') DO set /a FreeMemoryValue=%%I
+
+IF %FreeMemoryValue% GEQ 1000000 (
+	set /a FreeMemoryValueMB=!FreeMemoryValue!/1111
+)
+
+echo Memory to be used: %FreeMemoryValueMB%
+
 @REM set parEXE=phpar2_12.exe
-set parEXE=phpar2_13.exe
+@REM set parEXE=phpar2_13.exe
+@REM set parEXE=phpar2_15_x86.exe
+set parEXE=phpar2_15_x64.exe
 @REM set parEXE=par2.exe
 @REM set parEXE=par2-0.4-chuchusoft-2010-x64.exe
 
 
-md ".\%~nx1 - PAR"
-echo Par Start: %date% - %time% :Using %parEXE% >> ".\%~nx1 - PAR\par-time.log" 2>&1
+md ".\%~nx1-PAR"
+echo Par Start: %date% - %time% :Using %parEXE% >> ".\%~nx1-PAR\par-time.log" 2>&1
 
-START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v ".\%~nx1 - PAR\%~nx1.par2" "%~f1\*.*"  >> ".\%~nx1 - PAR\par-time.log" 2>&1
+START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m%FreeMemoryValueMB% -v ".\%~nx1 - PAR\%~nx1.par2" "%~f1\*.*"  >> ".\%~nx1-PAR\par-time.log" 2>&1
 
-echo "Completed parring..." >> ".\%~nx1 - PAR\par-time.log" 2>&1
+echo "Completed parring..." >> ".\%~nx1-PAR\par-time.log" 2>&1
 
-echo Par Stop : %date% - %time% :Using %parEXE% >> ".\%~nx1 - PAR\par-time.log" 2>&1
+echo Par Stop : %date% - %time% :Using %parEXE% >> ".\%~nx1-PAR\par-time.log" 2>&1
 
-copy ".\%~nx1 - PAR\%~nx1.par2" "%~f1" >> ".\%~nx1 - PAR\par-time.log" 2>&1
+copy ".\%~nx1-PAR\%~nx1.par2" "%~f1" >> ".\%~nx1-PAR\par-time.log" 2>&1
 
 @REM For x86 versions....
-@REM START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v ".\%~n1 - PAR\%~n1.par2" "%~f1\*.*"
+@REM START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v ".\%~n1-PAR\%~n1.par2" "%~f1\*.*"
 
 rem pause
-
-
-
-
 
 endlocal
