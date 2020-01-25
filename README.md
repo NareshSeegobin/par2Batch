@@ -10,3 +10,5 @@ http://paulhoule.com/phpar2/ phpar2_13.exe
 http://chuchusoft.com/par2_tbb/ par2+tbb
 
 http://sourceforge.net/projects/parchive/files/par2cmdline/
+
+The easiest way to verify .PAR2 files is to use QuickPar, http://www.quickpar.org.uk/Download.htm
