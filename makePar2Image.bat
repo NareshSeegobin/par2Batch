@@ -116,6 +116,11 @@ echo %size%
 set /a oneMB=1
 set /a oneGB=%oneMB%*1024
 
+set /a sixteenthGB=%oneMB%*64
+set /a eightGB=%oneMB%*128
+set /a quarterGB=%oneMB%*256
+set /a halfGB=%oneMB%*512
+set /a oneGB=%OneGB%*1
 set /a twoGB=%OneGB%*2
 set /a threeGB=%OneGB%*3
 set /a fourGB=%OneGB%*4
@@ -155,6 +160,11 @@ set /a size=%sum%
 rem http://www.computing.net/answers/programming/batch-file-nested-if-not-working/16298.html
 
 echo "Comparison sizes:"
+echo %sixteenthGB%
+echo %eightGB%
+echo %quarterGB%
+echo %halfGB%
+echo %oneGB%
 echo %twoGB%
 echo %fourGB%
 echo %eightGB%
@@ -173,48 +183,63 @@ set blockSize=2048000
 @rem set numRecoveryfiles=64
 set numRecoveryfiles=16
 
-if /I %size% LSS %twoGB% (
-	set blockSize=2048000
+if /I %size% LSS %sixteenthGB% (
+	set blockSize=2048
 	set numRecoveryfiles=16
    ) else (
-	if /I %size% LSS %fourGB% (
-		set blockSize=2048000
+	if /I %size% LSS %quarterGB% (
+		set blockSize=20480
 		set numRecoveryfiles=16
-		) else (
-		if /I %size% LSS %eightGB% (
-			set blockSize=2048000
+	   ) else (
+		if /I %size% LSS %oneGB% (
+			set blockSize=204800
 			set numRecoveryfiles=16
-		) else (
-			if /I %size% LSS %sixteenGB% (
+		   ) else (
+			if /I %size% LSS %twoGB% (
 				set blockSize=2048000
-				set numRecoveryfiles=32
-			) else (
-				if /I %size% LSS %sixtyfourGB% (
+				set numRecoveryfiles=16
+			   ) else (
+				if /I %size% LSS %fourGB% (
 					set blockSize=2048000
-					set numRecoveryfiles=64
-				) else (
-					if /I %size% LSS %twofiftysixGB% (
-						set blockSize=2048000
-						set numRecoveryfiles=128
+					set numRecoveryfiles=16
 					) else (
-						if /I %size% LSS %fivetwelveGB% (
-							set blockSize=2048000
-							set numRecoveryfiles=128
+					if /I %size% LSS %eightGB% (
+						set blockSize=2048000
+						set numRecoveryfiles=16
+					) else (
+						if /I %size% LSS %sixteenGB% (
+							set blockSize=4096000
+							set numRecoveryfiles=32
 						) else (
-							if /I %size% LSS %oneTB% (
-								set blockSize=2048000
-								set numRecoveryfiles=128
+							if /I %size% LSS %sixtyfourGB% (
+								set blockSize=8192000
+								set numRecoveryfiles=64
 							) else (
-								if /I %size% LSS %fourTB% (
-									set blockSize=2048000
-									set numRecoveryfiles=256
+								if /I %size% LSS %twofiftysixGB% (
+									set blockSize=8192000
+									set numRecoveryfiles=128
 								) else (
-									if /I %size% LSS %eightTB% (
-										set blockSize=2048000
-										set numRecoveryfiles=256
+									if /I %size% LSS %fivetwelveGB% (
+										set blockSize=8192000
+										set numRecoveryfiles=128
 									) else (
-										set blockSize=2048000
-										set numRecoveryfiles=256
+										if /I %size% LSS %oneTB% (
+											set blockSize=8192000
+											set numRecoveryfiles=128
+										) else (
+											if /I %size% LSS %fourTB% (
+												set blockSize=8192000
+												set numRecoveryfiles=256
+											) else (
+												if /I %size% LSS %eightTB% (
+													set blockSize=8192000
+													set numRecoveryfiles=256
+												) else (
+													set blockSize=8192000
+													set numRecoveryfiles=256
+													)
+												)
+											)
 										)
 									)
 								)
