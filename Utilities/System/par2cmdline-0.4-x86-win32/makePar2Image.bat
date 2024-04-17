@@ -1,5 +1,6 @@
 rem echo Par Start: %date% - %time% - >> "%~f1\par-time.log"
 
+REM PATH GITHUB and C Drive path Utilities/System/par2cmdline-0.4-x86-win32/
 
 
 echo %~f1
