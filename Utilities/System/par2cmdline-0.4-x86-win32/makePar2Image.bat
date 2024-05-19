@@ -66,6 +66,8 @@ set /a size=%sum%
 
 rem http://www.computing.net/answers/programming/batch-file-nested-if-not-working/16298.html
 
+@REM pause
+
 echo "Comparison sizes:"
 echo %sixteenthGB%
 echo %eightGB%
@@ -90,60 +92,76 @@ set blockSize=2048000
 @rem set numRecoveryfiles=64
 set numRecoveryfiles=16
 
+set sizeChoice=blank
+
 if /I %size% LSS %sixteenthGB% (
-	set blockSize=20480
+	set blockSize=204800
 	set numRecoveryfiles=16
+	set sizeChoice=%sixteenthGB%
    ) else (
 	if /I %size% LSS %quarterGB% (
 		set blockSize=204800
 		set numRecoveryfiles=16
+		set sizeChoice=%quarterGB%
 	   ) else (
 		if /I %size% LSS %oneGB% (
 			set blockSize=204800
 			set numRecoveryfiles=16
+			set sizeChoice=%oneGB%
 		   ) else (
 			if /I %size% LSS %twoGB% (
 				set blockSize=2048000
 				set numRecoveryfiles=16
+				set sizeChoice=%twoGB%
 			   ) else (
 				if /I %size% LSS %fourGB% (
 					set blockSize=2048000
 					set numRecoveryfiles=16
+					set sizeChoice=%fourGB%
 					) else (
 					if /I %size% LSS %eightGB% (
 						set blockSize=2048000
 						set numRecoveryfiles=16
+						set sizeChoice=%eightGB%
 					) else (
 						if /I %size% LSS %sixteenGB% (
 							set blockSize=4096000
 							set numRecoveryfiles=32
+							set sizeChoice=%sixteenGB%
 						) else (
 							if /I %size% LSS %sixtyfourGB% (
 								set blockSize=8192000
 								set numRecoveryfiles=64
+								set sizeChoice=%sixtyfourGB%
 							) else (
 								if /I %size% LSS %twofiftysixGB% (
 									set blockSize=8192000
 									set numRecoveryfiles=128
+									set sizeChoice=%twofiftysixGB%
 								) else (
 									if /I %size% LSS %fivetwelveGB% (
 										set blockSize=8192000
 										set numRecoveryfiles=128
+										set sizeChoice=%fivetwelveGB%
 									) else (
 										if /I %size% LSS %oneTB% (
 											set blockSize=8192000
 											set numRecoveryfiles=128
+											set sizeChoice=%oneTB%
 										) else (
 											if /I %size% LSS %fourTB% (
 												set blockSize=8192000
 												set numRecoveryfiles=256
+												set sizeChoice=%fourTB%
 											) else (
 												if /I %size% LSS %eightTB% (
 													set blockSize=8192000
 													set numRecoveryfiles=256
+													set sizeChoice=%eightTB%
 												) else (
 													set blockSize=8192000
 													set numRecoveryfiles=256
+													set sizeChoice=Default-8192000
 													)
 												)
 											)
@@ -158,8 +176,12 @@ if /I %size% LSS %sixteenthGB% (
 		)
 	)
 
+echo "Choice selected: %sizeChoice%"
 echo "Dataset Size: %size%"
 echo "blockSize is: %blockSize%"
+echo "Number of Recovery files is: %numRecoveryfiles%"
+
+@REM pause
 
 @REM For large number of files - large blick size and large number of recovery files.
 
@@ -191,6 +213,7 @@ IF %NumCoresValue% GEQ 1 (
 echo Number of threads to be used: %NumCores%
 
 
+
 @REM set parEXE=phpar2_12.exe
 @REM set parEXE=phpar2_13.exe
 @REM set parEXE=phpar2_15_x86.exe
@@ -199,23 +222,27 @@ set parEXE=phpar2_15_x64.exe
 @REM set parEXE=par2-0.4-chuchusoft-2010-x64.exe
 
 echo %CD%
+echo %~dp1
 
 @REM md ".\%~nx1-PAR"
-md "%CD%\%~nx1-PAR"
+@REM md "%CD%\%~nx1-PAR"
+md "%~dp1\%~nx1-PAR"
 
-echo Par Start: %date% - %time% :Using %parEXE% >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+@REM pause
+
+echo Par Start: %date% - %time% :Using %parEXE% >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 
 @REM START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v -v "%CD%\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
 @REM 20150110 - START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u  -m%FreeMemoryValueMB% -v "%CD%\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
-echo [Command to be used:] START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u  -m%FreeMemoryValueMB% -v "%CD%\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+echo [Command to be used:] START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u  -m%FreeMemoryValueMB% -v "%~dp1\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 echo size: %size%
-START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -m%FreeMemoryValueMB% -v -v "%CD%\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -m%FreeMemoryValueMB% -v -v "%~dp1\%~nx1-PAR\%~nx1.par2" "%~f1\*.*"  >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 
-echo "Completed parring..." >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+echo "Completed parring..." >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 
-echo Par Stop : %date% - %time% :Using %parEXE% >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+echo Par Stop : %date% - %time% :Using %parEXE% >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 
-copy "%CD%\%~nx1-PAR\%~nx1.par2" "%~f1" >> "%CD%\%~nx1-PAR\par-time.log" 2>&1
+copy "%~dp1\%~nx1-PAR\%~nx1.par2" "%~f1" >> "%~dp1\%~nx1-PAR\par-time.log" 2>&1
 
 @REM For x86 versions....
 @REM START "Parring data" /I /WAIT /LOW %parPath%\%parEXE% c -s%blockSize% -r100 -u -n%numRecoveryfiles% -m1500 -v "%CD%\%~n1-PAR\%~n1.par2" "%~f1\*.*"
