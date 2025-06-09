@@ -10,14 +10,12 @@ if "%~1"=="" (
 echo DEBUG: Input directory: %~1
 set "INPUT_DIR=%~f1"
 echo DEBUG: Fully qualified input directory: !INPUT_DIR!
-pause
 
 rem Define constants
 set "PAR_PATH=C:\Utilities\System\par2"
 set "PAR_EXE=phpar2_15_x64.exe"
 echo DEBUG: PAR_PATH: !PAR_PATH!
 echo DEBUG: PAR_EXE: !PAR_EXE!
-pause
 
 rem Verify paths
 for %%P in ("!PAR_PATH!" "!INPUT_DIR!") do (
@@ -32,7 +30,6 @@ if not exist "!PAR_PATH!\!PAR_EXE!" (
 )
 echo DEBUG: Paths verified successfully: PAR_PATH and INPUT_DIR exist
 echo DEBUG: PAR2 executable exists: !PAR_PATH!\!PAR_EXE!
-pause
 
 rem Validate and resolve input directory
 set "INPUT_DIR=%~f1"
@@ -51,7 +48,6 @@ echo DEBUG: Listing directory contents (all files, excluding directories):
 dir "!INPUT_DIR!" /a-d /s || echo DEBUG: No files or access denied
 echo DEBUG: Checking for subdirectories:
 dir "!INPUT_DIR!" /ad || echo DEBUG: No subdirectories found
-pause
 
 rem Calculate directory size in bytes first, then convert to MB
 set "SUM_BYTES=0"
@@ -80,7 +76,6 @@ echo DEBUG: Directory size calculated: !SUM! MB
 if !FILE_COUNT! equ 0 (
     echo DEBUG: Warning - No files found in directory: !INPUT_DIR!
 )
-pause
 
 rem Define size thresholds and parameters
 set "SIZE_LEVELS=64 128 256 512 1024 2048 4096 16384 65536 262144 524288 1048576 4194304 8388608"
@@ -89,7 +84,6 @@ set "REC_FILES=16 16 16 16 16 16 32 64 128 128 128 256 256 256"
 echo DEBUG: SIZE_LEVELS: !SIZE_LEVELS!
 echo DEBUG: BLOCK_SIZES: !BLOCK_SIZES!
 echo DEBUG: REC_FILES: !REC_FILES!
-pause
 
 rem Select parameters based on size
 set "INDEX=0"
@@ -127,14 +121,12 @@ for %%R in (!REC_FILES!) do (
 
 :size_selected
 echo DEBUG: Selected parameters: BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
-pause
 
 rem Get system resources
 for /f "tokens=2 delims==" %%M in ('wmic OS get FreePhysicalMemory /value ^| find "="') do set /a "FREE_MEM_MB=%%M/1024"
 if !FREE_MEM_MB! lss 500 set "FREE_MEM_MB=500"
 for /f "tokens=2 delims==" %%C in ('wmic cpu get NumberOfLogicalProcessors /value ^| find "="') do set "NUM_CORES=%%C"
 echo DEBUG: System resources: FREE_MEM_MB=!FREE_MEM_MB!, NUM_CORES=!NUM_CORES!
-pause
 
 rem Setup output directory
 set "OUTPUT_DIR=%~dp1%~nx1-PAR"
@@ -143,14 +135,12 @@ if not exist "!OUTPUT_DIR!" mkdir "!OUTPUT_DIR!" || (
     exit /b 1
 )
 echo DEBUG: Output directory created: !OUTPUT_DIR!
-pause
 
 rem Setup logging
 set "LOG_FILE=!OUTPUT_DIR!\par-time.log"
 echo Par Start: %date% - %time% : Using !PAR_EXE! > "!LOG_FILE!"
 echo DEBUG: Log file created: !LOG_FILE!
 echo DEBUG: Log file initial content: Par Start: %date% - %time% : Using !PAR_EXE!
-pause
 
 rem Test final PAR2 command
 echo DEBUG: Testing PAR2 command...
@@ -167,7 +157,6 @@ dir "!INPUT_DIR!\*.*" >nul 2>&1 || (
     exit /b 1
 )
 echo DEBUG: PAR2 command test passed
-pause
 
 rem Execute PAR2
 echo Creating PAR2 files...
@@ -178,7 +167,6 @@ if errorlevel 1 (
     exit /b 1
 )
 echo DEBUG: PAR2 command executed successfully
-pause
 
 rem Finalize
 echo Par Stop: %date% - %time% : Using !PAR_EXE! >> "!LOG_FILE!"
@@ -189,8 +177,6 @@ echo DEBUG: PAR2 file copy attempted to: !INPUT_DIR!
 echo Completed: Size=!SUM!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
 echo DEBUG: Final log entry: Completed: Size=!SUM!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
 echo Process completed successfully
-pause
 
 endlocal
 exit /b 0
-
