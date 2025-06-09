@@ -49,8 +49,8 @@ dir "!INPUT_DIR!" /a-d /s || echo DEBUG: No files or access denied
 echo DEBUG: Checking for subdirectories:
 dir "!INPUT_DIR!" /ad || echo DEBUG: No subdirectories found
 
-rem Calculate directory size in bytes first, then convert to MB
-set "SUM_BYTES=0"
+rem Calculate directory size in KB directly
+set "SUM_KB=0"
 set "FILE_COUNT=0"
 echo DEBUG: Starting file enumeration in: !INPUT_DIR!
 for /f "delims=" %%F in ('dir "!INPUT_DIR!" /a-d /s /b 2^>nul') do (
@@ -58,21 +58,29 @@ for /f "delims=" %%F in ('dir "!INPUT_DIR!" /a-d /s /b 2^>nul') do (
     echo DEBUG: Processing file: %%F
     if defined TEMP_SIZE (
         echo DEBUG: File size: !TEMP_SIZE! bytes
-        set /a "SUM_BYTES+=!TEMP_SIZE!" 2>nul || (
-            echo DEBUG: Warning - Could not add size for file: %%F
-            set "TEMP_SIZE=0"
+        rem Convert file size to KB (1 KB = 1,024 bytes)
+        set /a "FILE_KB=!TEMP_SIZE! / 1024" 2>nul || (
+            echo DEBUG: Warning - Could not convert size for file: %%F
+            set "FILE_KB=0"
         )
+        set /a "SUM_KB+=!FILE_KB!" 2>nul || (
+            echo DEBUG: Warning - Could not add size for file: %%F
+            set "FILE_KB=0"
+        )
+        echo DEBUG: File size in KB: !FILE_KB! KB
         set /a "FILE_COUNT+=1"
     ) else (
         echo DEBUG: Warning - File size not available for: %%F
     )
 )
-rem Convert bytes to MB (1 MB = 1,048,576 bytes)
-set /a "SUM=!SUM_BYTES! / 1024 / 1024"
-if !SUM! lss 0 set "SUM=0"
+rem Ensure SUM_KB is non-negative
+if !SUM_KB! lss 0 set "SUM_KB=0"
+rem Convert KB to MB for output and parameter selection (1 MB = 1,024 KB)
+set /a "SUM_MB=!SUM_KB! / 1024"
+if !SUM_MB! lss 0 set "SUM_MB=0"
 echo DEBUG: Total files processed: !FILE_COUNT!
-echo DEBUG: Total size in bytes: !SUM_BYTES!
-echo DEBUG: Directory size calculated: !SUM! MB
+echo DEBUG: Total size in KB: !SUM_KB! KB
+echo DEBUG: Directory size calculated: !SUM_MB! MB
 if !FILE_COUNT! equ 0 (
     echo DEBUG: Warning - No files found in directory: !INPUT_DIR!
 )
@@ -90,7 +98,7 @@ set "INDEX=0"
 for %%S in (!SIZE_LEVELS!) do (
     set /a "INDEX+=1"
     echo DEBUG: Checking size threshold: %%S, INDEX: !INDEX!
-    if !SUM! lss %%S (
+    if !SUM_MB! lss %%S (
         set "COUNT=0"
         for %%B in (!BLOCK_SIZES!) do (
             set /a "COUNT+=1"
@@ -174,8 +182,8 @@ copy /y "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!" >> "!LOG_FILE!" 2>&1 || (
     echo WARNING: Failed to copy .par2 file to input directory >> "!LOG_FILE!"
 )
 echo DEBUG: PAR2 file copy attempted to: !INPUT_DIR!
-echo Completed: Size=!SUM!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
-echo DEBUG: Final log entry: Completed: Size=!SUM!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
+echo Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
+echo DEBUG: Final log entry: Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
 echo Process completed successfully
 
 endlocal
