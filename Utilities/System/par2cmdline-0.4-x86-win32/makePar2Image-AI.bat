@@ -48,82 +48,57 @@ if not exist "!INPUT_DIR!\*" (
 rem Test directory access
 dir "!INPUT_DIR!" >nul 2>&1 || (
     echo ERROR: Cannot access input directory: "!INPUT_DIR!"
+    echo ERROR: Please run the script as Administrator or check directory permissions
     exit /b 1
 )
 echo DEBUG: Input directory exists and is accessible: "!INPUT_DIR!"
 echo DEBUG: Listing directory contents (all files, excluding directories):
-dir "!INPUT_DIR!" /a-d /s /q >nul 2>&1 && echo DEBUG: Files found || echo DEBUG: No files or access denied
+dir "!INPUT_DIR!" /s /b /a-d >nul 2>&1 && echo DEBUG: Files found || echo DEBUG: No files found in initial check
+echo DEBUG: Raw directory listing for diagnostics:
+dir "!INPUT_DIR!" /s /a /q 2>&1 || echo DEBUG: Failed to list directory contents
 echo DEBUG: Checking for subdirectories:
 dir "!INPUT_DIR!" /ad /q >nul 2>&1 && echo DEBUG: Subdirectories found || echo DEBUG: No subdirectories found
 
-rem Calculate directory size in KB directly
-set "SUM_KB=0"
-set "FILE_COUNT=0"
+rem Calculate directory size in MB directly
+set /a SUM_MB=0
+set /a FILE_COUNT=0
 echo DEBUG: Starting file enumeration in: "!INPUT_DIR!"
-for /f "delims=" %%F in ('dir "!INPUT_DIR!" /a-d /s /b 2^>nul') do (
-    set "TEMP_SIZE=%%~zF"
-    echo DEBUG: Processing file: "%%F"
-    if defined TEMP_SIZE (
-        echo DEBUG: File size: !TEMP_SIZE! bytes
-        rem Handle file sizes to avoid overflow
-        set "FILE_KB=0"
-        if !TEMP_SIZE! gtr 2000000000 (
-            rem For files >2GB, process as string, sum in KB
-            set "SIZE_STR=!TEMP_SIZE!"
-            set "PARTIAL_SUM=0"
-            set "POSITION=0"
-            echo DEBUG: Processing string: "!SIZE_STR!"
-            rem Process each digit from right to left
-            :digit_loop
-            if defined SIZE_STR (
-                set "DIGIT=!SIZE_STR:~-1!"
-                set "SIZE_STR=!SIZE_STR:~0,-1!"
-                rem Calculate contribution in KB: (digit * 10^position) / 1024
-                set /a "DIGIT_VALUE=!DIGIT!" 2>nul
-                if !POSITION! leq 6 (
-                    rem For lower positions, calculate directly
-                    set /a "CONTRIBUTION=!DIGIT_VALUE! * 1000^(!POSITION!/3) * 100^(!POSITION!%%3) / 1024" 2>nul || set "CONTRIBUTION=0"
-                ) else (
-                    rem For higher positions, scale to avoid overflow
-                    set /a "CONTRIBUTION=!DIGIT_VALUE! * 1000^((!POSITION!-6)/3) * 100^((!POSITION!-6)%%3) * 1000000 / 1024" 2>nul || set "CONTRIBUTION=0"
-                )
-                set /a "PARTIAL_SUM+=!CONTRIBUTION!" 2>nul || (
-                    echo DEBUG: Warning - Overflow in partial sum for file: "%%F" at position !POSITION!
-                    set "PARTIAL_SUM=0"
-                )
-                echo DEBUG: Digit: !DIGIT!, Position: !POSITION!, Contribution: !CONTRIBUTION! KB
-                set /a "POSITION+=1"
-                goto :digit_loop
-            )
-            set "FILE_KB=!PARTIAL_SUM!"
-        ) else (
-            rem For files <=2GB, compute KB directly
-            set /a "FILE_KB=!TEMP_SIZE! / 1024" 2>nul || (
-                echo DEBUG: Warning - Could not convert size for file: "%%F"
-                set "FILE_KB=0"
-            )
+for /f "delims=" %%I in ('dir "!INPUT_DIR!" /s /b /a-d 2^>nul') do (
+    set "CURRENT_FILE=%%I"
+    echo DEBUG: Processing file: "!CURRENT_FILE!"
+    set "tempSize=%%~zI"
+    if defined tempSize (
+        echo DEBUG: DirSize RAW: !tempSize! bytes
+        echo DEBUG: DirSize RAW2: !tempSize!
+        echo DEBUG: DirSize In KB: !tempSize:~0,-3!
+        set /a value=!tempSize:~0,-3! 2>nul || (
+            echo DEBUG: Warning - Could not truncate size for file: "!CURRENT_FILE!"
+            set /a value=0
         )
-        set /a "SUM_KB+=!FILE_KB!" 2>nul || (
-            echo DEBUG: Warning - Could not add size for file: "%%F"
-            set "FILE_KB=0"
+        set /a value=!value!/1024 2>nul || (
+            echo DEBUG: Warning - Could not convert to MB for file: "!CURRENT_FILE!"
+            set /a value=0
         )
-        echo DEBUG: File size in KB: !FILE_KB! KB
-        set /a "FILE_COUNT+=1"
+        set /a SUM_MB+=!value! 2>nul || (
+            echo DEBUG: Warning - Could not add size for file: "!CURRENT_FILE!"
+            set /a value=0
+        )
+        echo DEBUG: File size in MB: !value! MB
+        set /a FILE_COUNT+=1
     ) else (
-        echo DEBUG: Warning - File size not available for: "%%F"
+        echo DEBUG: Warning - File size not available for: "!CURRENT_FILE!"
     )
 )
-rem Ensure SUM_KB is non-negative
-if !SUM_KB! lss 0 set "SUM_KB=0"
-rem Convert KB to MB for output and parameter selection (1 MB = 1,024 KB)
-set /a "SUM_MB=!SUM_KB! / 1024"
+rem Ensure SUM_MB is non-negative
 if !SUM_MB! lss 0 set "SUM_MB=0"
 echo DEBUG: Total files processed: !FILE_COUNT!
-echo DEBUG: Total size in KB: !SUM_KB! KB
-echo DEBUG: Directory size calculated: !SUM_MB! MB
+echo DEBUG: Total size in MB: !SUM_MB! MB
 if !FILE_COUNT! equ 0 (
     echo DEBUG: Warning - No files found in directory: "!INPUT_DIR!"
+    echo DEBUG: Possible causes: Directory is empty, only contains subdirectories, or access is denied
+    echo DEBUG: Please verify directory contents and run as Administrator
 )
+set /a size=!SUM_MB!
 
 rem Define size thresholds and parameters
 set "SIZE_LEVELS=64 128 256 512 1024 2048 4096 16384 65536 262144 524288 1048576 4194304 8388608"
@@ -138,7 +113,7 @@ set "INDEX=0"
 for %%S in (!SIZE_LEVELS!) do (
     set /a "INDEX+=1"
     echo DEBUG: Checking size threshold: %%S, INDEX: !INDEX!
-    if !SUM_MB! lss %%S (
+    if !size! lss %%S (
         set "COUNT=0"
         for %%B in (!BLOCK_SIZES!) do (
             set /a "COUNT+=1"
@@ -205,7 +180,7 @@ dir "!INPUT_DIR!\*.*" >nul 2>&1 || (
     exit /b 1
 )
 echo DEBUG: PAR2 command test passed
-
+pause
 rem Execute PAR2
 echo Creating PAR2 files...
 echo Command: !PAR2_COMMAND! >> "!LOG_FILE!"
@@ -222,8 +197,8 @@ copy /y "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!" >> "!LOG_FILE!" 2>&1 || (
     echo WARNING: Failed to copy .par2 file to input directory >> "!LOG_FILE!"
 )
 echo DEBUG: PAR2 file copy attempted to: "!INPUT_DIR!"
-echo Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
-echo DEBUG: Final log entry: Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
+echo Completed: Size=!size!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
+echo DEBUG: Final log entry: Completed: Size=!size!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
 echo Process completed successfully
 
 endlocal
