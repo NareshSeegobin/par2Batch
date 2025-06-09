@@ -7,70 +7,110 @@ if "%~1"=="" (
     echo Usage: %0 "directory_path"
     exit /b 1
 )
-echo DEBUG: Input directory: %~1
+echo DEBUG: Input directory: "%~1"
 set "INPUT_DIR=%~f1"
-echo DEBUG: Fully qualified input directory: !INPUT_DIR!
+echo DEBUG: Fully qualified input directory: "!INPUT_DIR!"
 
 rem Define constants
 set "PAR_PATH=C:\Utilities\System\par2"
 set "PAR_EXE=phpar2_15_x64.exe"
-echo DEBUG: PAR_PATH: !PAR_PATH!
-echo DEBUG: PAR_EXE: !PAR_EXE!
+echo DEBUG: PAR_PATH: "!PAR_PATH!"
+echo DEBUG: PAR_EXE: "!PAR_EXE!"
 
 rem Verify paths
 for %%P in ("!PAR_PATH!" "!INPUT_DIR!") do (
     if not exist "%%~P" (
-        echo ERROR: Path not found: %%~P
+        echo ERROR: Path not found: "%%~P"
         exit /b 1
     )
 )
 if not exist "!PAR_PATH!\!PAR_EXE!" (
-    echo ERROR: PAR2 executable not found: !PAR_PATH!\!PAR_EXE!
+    echo ERROR: PAR2 executable not found: "!PAR_PATH!\!PAR_EXE!"
     exit /b 1
 )
 echo DEBUG: Paths verified successfully: PAR_PATH and INPUT_DIR exist
-echo DEBUG: PAR2 executable exists: !PAR_PATH!\!PAR_EXE!
+echo DEBUG: PAR2 executable exists: "!PAR_PATH!\!PAR_EXE!"
 
 rem Validate and resolve input directory
 set "INPUT_DIR=%~f1"
-echo DEBUG: Raw input argument: %1
-echo DEBUG: Resolved INPUT_DIR: !INPUT_DIR!
-if not exist "!INPUT_DIR!\" (
-    echo ERROR: Input directory does not exist: !INPUT_DIR!
+echo DEBUG: Raw input argument: "%1"
+echo DEBUG: Resolved INPUT_DIR: "!INPUT_DIR!"
+rem Check if the resolved path is valid
+if not defined INPUT_DIR (
+    echo ERROR: Input directory path is empty or invalid
     exit /b 1
 )
+rem Verify directory existence with robust quoting
+if not exist "!INPUT_DIR!\*" (
+    echo ERROR: Input directory does not exist or is inaccessible: "!INPUT_DIR!"
+    exit /b 1
+)
+rem Test directory access
 dir "!INPUT_DIR!" >nul 2>&1 || (
-    echo ERROR: Cannot access input directory: !INPUT_DIR!
+    echo ERROR: Cannot access input directory: "!INPUT_DIR!"
     exit /b 1
 )
-echo DEBUG: Input directory exists and is accessible: !INPUT_DIR!
+echo DEBUG: Input directory exists and is accessible: "!INPUT_DIR!"
 echo DEBUG: Listing directory contents (all files, excluding directories):
-dir "!INPUT_DIR!" /a-d /s || echo DEBUG: No files or access denied
+dir "!INPUT_DIR!" /a-d /s /q >nul 2>&1 && echo DEBUG: Files found || echo DEBUG: No files or access denied
 echo DEBUG: Checking for subdirectories:
-dir "!INPUT_DIR!" /ad || echo DEBUG: No subdirectories found
+dir "!INPUT_DIR!" /ad /q >nul 2>&1 && echo DEBUG: Subdirectories found || echo DEBUG: No subdirectories found
 
 rem Calculate directory size in KB directly
 set "SUM_KB=0"
 set "FILE_COUNT=0"
-echo DEBUG: Starting file enumeration in: !INPUT_DIR!
+echo DEBUG: Starting file enumeration in: "!INPUT_DIR!"
 for /f "delims=" %%F in ('dir "!INPUT_DIR!" /a-d /s /b 2^>nul') do (
     set "TEMP_SIZE=%%~zF"
-    echo DEBUG: Processing file: %%F
+    echo DEBUG: Processing file: "%%F"
     if defined TEMP_SIZE (
         echo DEBUG: File size: !TEMP_SIZE! bytes
-        rem Convert file size to KB (1 KB = 1,024 bytes)
-        set /a "FILE_KB=!TEMP_SIZE! / 1024" 2>nul || (
-            echo DEBUG: Warning - Could not convert size for file: %%F
-            set "FILE_KB=0"
+        rem Handle file sizes to avoid overflow
+        set "FILE_KB=0"
+        if !TEMP_SIZE! gtr 2000000000 (
+            rem For files >2GB, process as string, sum in KB
+            set "SIZE_STR=!TEMP_SIZE!"
+            set "PARTIAL_SUM=0"
+            set "POSITION=0"
+            echo DEBUG: Processing string: "!SIZE_STR!"
+            rem Process each digit from right to left
+            :digit_loop
+            if defined SIZE_STR (
+                set "DIGIT=!SIZE_STR:~-1!"
+                set "SIZE_STR=!SIZE_STR:~0,-1!"
+                rem Calculate contribution in KB: (digit * 10^position) / 1024
+                set /a "DIGIT_VALUE=!DIGIT!" 2>nul
+                if !POSITION! leq 6 (
+                    rem For lower positions, calculate directly
+                    set /a "CONTRIBUTION=!DIGIT_VALUE! * 1000^(!POSITION!/3) * 100^(!POSITION!%%3) / 1024" 2>nul || set "CONTRIBUTION=0"
+                ) else (
+                    rem For higher positions, scale to avoid overflow
+                    set /a "CONTRIBUTION=!DIGIT_VALUE! * 1000^((!POSITION!-6)/3) * 100^((!POSITION!-6)%%3) * 1000000 / 1024" 2>nul || set "CONTRIBUTION=0"
+                )
+                set /a "PARTIAL_SUM+=!CONTRIBUTION!" 2>nul || (
+                    echo DEBUG: Warning - Overflow in partial sum for file: "%%F" at position !POSITION!
+                    set "PARTIAL_SUM=0"
+                )
+                echo DEBUG: Digit: !DIGIT!, Position: !POSITION!, Contribution: !CONTRIBUTION! KB
+                set /a "POSITION+=1"
+                goto :digit_loop
+            )
+            set "FILE_KB=!PARTIAL_SUM!"
+        ) else (
+            rem For files <=2GB, compute KB directly
+            set /a "FILE_KB=!TEMP_SIZE! / 1024" 2>nul || (
+                echo DEBUG: Warning - Could not convert size for file: "%%F"
+                set "FILE_KB=0"
+            )
         )
         set /a "SUM_KB+=!FILE_KB!" 2>nul || (
-            echo DEBUG: Warning - Could not add size for file: %%F
+            echo DEBUG: Warning - Could not add size for file: "%%F"
             set "FILE_KB=0"
         )
         echo DEBUG: File size in KB: !FILE_KB! KB
         set /a "FILE_COUNT+=1"
     ) else (
-        echo DEBUG: Warning - File size not available for: %%F
+        echo DEBUG: Warning - File size not available for: "%%F"
     )
 )
 rem Ensure SUM_KB is non-negative
@@ -82,7 +122,7 @@ echo DEBUG: Total files processed: !FILE_COUNT!
 echo DEBUG: Total size in KB: !SUM_KB! KB
 echo DEBUG: Directory size calculated: !SUM_MB! MB
 if !FILE_COUNT! equ 0 (
-    echo DEBUG: Warning - No files found in directory: !INPUT_DIR!
+    echo DEBUG: Warning - No files found in directory: "!INPUT_DIR!"
 )
 
 rem Define size thresholds and parameters
@@ -139,29 +179,29 @@ echo DEBUG: System resources: FREE_MEM_MB=!FREE_MEM_MB!, NUM_CORES=!NUM_CORES!
 rem Setup output directory
 set "OUTPUT_DIR=%~dp1%~nx1-PAR"
 if not exist "!OUTPUT_DIR!" mkdir "!OUTPUT_DIR!" || (
-    echo ERROR: Failed to create output directory: !OUTPUT_DIR!
+    echo ERROR: Failed to create output directory: "!OUTPUT_DIR!"
     exit /b 1
 )
-echo DEBUG: Output directory created: !OUTPUT_DIR!
+echo DEBUG: Output directory created: "!OUTPUT_DIR!"
 
 rem Setup logging
 set "LOG_FILE=!OUTPUT_DIR!\par-time.log"
 echo Par Start: %date% - %time% : Using !PAR_EXE! > "!LOG_FILE!"
-echo DEBUG: Log file created: !LOG_FILE!
+echo DEBUG: Log file created: "!LOG_FILE!"
 echo DEBUG: Log file initial content: Par Start: %date% - %time% : Using !PAR_EXE!
 
 rem Test final PAR2 command
 echo DEBUG: Testing PAR2 command...
 set "PAR2_COMMAND=!PAR_PATH!\!PAR_EXE! c -s!BLOCK_SIZE! -r100 -u -m!FREE_MEM_MB! -v -v "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!\*.*""
 echo DEBUG: Final PAR2 command: !PAR2_COMMAND!
-echo DEBUG: Verifying PAR2 executable exists: !PAR_PATH!\!PAR_EXE!
+echo DEBUG: Verifying PAR2 executable exists: "!PAR_PATH!\!PAR_EXE!"
 if not exist "!PAR_PATH!\!PAR_EXE!" (
     echo ERROR: PAR2 executable not found for command execution
     exit /b 1
 )
 echo DEBUG: Verifying input directory contains files
 dir "!INPUT_DIR!\*.*" >nul 2>&1 || (
-    echo ERROR: No files found in input directory: !INPUT_DIR!
+    echo ERROR: No files found in input directory: "!INPUT_DIR!"
     exit /b 1
 )
 echo DEBUG: PAR2 command test passed
@@ -181,7 +221,7 @@ echo Par Stop: %date% - %time% : Using !PAR_EXE! >> "!LOG_FILE!"
 copy /y "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!" >> "!LOG_FILE!" 2>&1 || (
     echo WARNING: Failed to copy .par2 file to input directory >> "!LOG_FILE!"
 )
-echo DEBUG: PAR2 file copy attempted to: !INPUT_DIR!
+echo DEBUG: PAR2 file copy attempted to: "!INPUT_DIR!"
 echo Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES! >> "!LOG_FILE!"
 echo DEBUG: Final log entry: Completed: Size=!SUM_MB!MB, BlockSize=!BLOCK_SIZE!, RecoveryFiles=!NUM_REC_FILES!
 echo Process completed successfully
