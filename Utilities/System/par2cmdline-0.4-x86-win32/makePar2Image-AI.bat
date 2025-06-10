@@ -169,7 +169,7 @@ echo DEBUG: Log file initial content: Par Start: %date% - %time% : Using !PAR_EX
 
 rem Test final PAR2 command
 echo DEBUG: Testing PAR2 command...
-set "PAR2_COMMAND=!PAR_PATH!\!PAR_EXE! c -s!BLOCK_SIZE! -r100 -n!NUM_REC_FILES! -m!FREE_MEM_MB! -v -v "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!\*.*""
+set "PAR2_COMMAND=!PAR_PATH!\!PAR_EXE! c -s!BLOCK_SIZE! -r100 -m!FREE_MEM_MB! -v -v "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!\*.*""
 echo DEBUG: Final PAR2 command: !PAR2_COMMAND!
 echo DEBUG: Verifying PAR2 executable exists: "!PAR_PATH!\!PAR_EXE!"
 if not exist "!PAR_PATH!\!PAR_EXE!" (
