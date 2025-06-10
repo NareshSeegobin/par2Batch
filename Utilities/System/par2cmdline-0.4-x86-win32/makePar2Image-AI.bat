@@ -75,7 +75,7 @@ for /f "delims=" %%I in ('dir "!INPUT_DIR!" /s /b /a-d 2^>nul') do (
             echo DEBUG: Warning - Could not truncate size for file: "!CURRENT_FILE!"
             set /a value=0
         )
-        set /a value=!value!/1024 2>nul || (
+        set /a value=!value! 2>nul || (
             echo DEBUG: Warning - Could not convert to MB for file: "!CURRENT_FILE!"
             set /a value=0
         )
@@ -83,7 +83,8 @@ for /f "delims=" %%I in ('dir "!INPUT_DIR!" /s /b /a-d 2^>nul') do (
             echo DEBUG: Warning - Could not add size for file: "!CURRENT_FILE!"
             set /a value=0
         )
-        echo DEBUG: File size in MB: !value! MB
+        set /a value=!value!/1024 2>nul
+		echo DEBUG: File size in MB: !value! MB
         set /a FILE_COUNT+=1
     ) else (
         echo DEBUG: Warning - File size not available for: "!CURRENT_FILE!"
@@ -92,6 +93,7 @@ for /f "delims=" %%I in ('dir "!INPUT_DIR!" /s /b /a-d 2^>nul') do (
 rem Ensure SUM_MB is non-negative
 if !SUM_MB! lss 0 set "SUM_MB=0"
 echo DEBUG: Total files processed: !FILE_COUNT!
+set /a SUM_MB=!SUM_MB!/1024 2>nul
 echo DEBUG: Total size in MB: !SUM_MB! MB
 if !FILE_COUNT! equ 0 (
     echo DEBUG: Warning - No files found in directory: "!INPUT_DIR!"
@@ -127,7 +129,7 @@ for %%S in (!SIZE_LEVELS!) do (
 )
 rem Default for sizes > 8TB
 set "BLOCK_SIZE=8192000"
-set "NUM_REC_FILES=256"
+set "NUM_REC_FILES=32"
 echo DEBUG: Default parameters applied: BLOCK_SIZE=!BLOCK_SIZE!, NUM_REC_FILES=!NUM_REC_FILES!
 goto :size_selected
 
@@ -167,7 +169,7 @@ echo DEBUG: Log file initial content: Par Start: %date% - %time% : Using !PAR_EX
 
 rem Test final PAR2 command
 echo DEBUG: Testing PAR2 command...
-set "PAR2_COMMAND=!PAR_PATH!\!PAR_EXE! c -s!BLOCK_SIZE! -r100 -u -m!FREE_MEM_MB! -v -v "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!\*.*""
+set "PAR2_COMMAND=!PAR_PATH!\!PAR_EXE! c -s!BLOCK_SIZE! -r100 -n!NUM_REC_FILES! -m!FREE_MEM_MB! -v -v "!OUTPUT_DIR!\%~nx1.par2" "!INPUT_DIR!\*.*""
 echo DEBUG: Final PAR2 command: !PAR2_COMMAND!
 echo DEBUG: Verifying PAR2 executable exists: "!PAR_PATH!\!PAR_EXE!"
 if not exist "!PAR_PATH!\!PAR_EXE!" (
